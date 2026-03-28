@@ -22,7 +22,8 @@ RUN go install -v github.com/projectdiscovery/katana/cmd/katana@latest
 RUN go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
 
 # 4. --- ADVANCED EXPLOITATION & RECON TOOLS ---
-RUN go install -v github.com/OWASP/Amass/v3/...@master
+# 👇 یہاں Amass کا نیا آفیشل پاتھ اپڈیٹ کیا گیا ہے
+RUN go install -v github.com/owasp-amass/amass/v3/...@latest
 RUN go install -v github.com/ffuf/ffuf/v2@latest
 RUN go install -v github.com/tomnomnom/waybackurls@latest
 RUN go install -v github.com/tomnomnom/assetfinder@latest

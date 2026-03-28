@@ -3,20 +3,20 @@ import sys
 import subprocess
 import requests
 import json
-import html # 👈 [نیا اضافہ] یہ اسپیشل کریکٹرز کو کریش ہونے سے بچائے گا
+import html
 from pymongo import MongoClient
 from datetime import datetime
 from colorama import Fore, Style, init
 
-# Colorama کو انیشلائز کرنا تاکہ کنسول پر رنگین آؤٹ پٹ آئے
+# Colorama Initialization
 init(autoreset=True)
 
 print(f"{Fore.CYAN}{'='*50}")
-print(f"{Fore.CYAN}🚀 CYBER BEAST ENGINE INITIALIZING... (Railway Pro)")
+print(f"{Fore.CYAN}🚀 CYBER BEAST ULTIMATE ENGINE INITIALIZING...")
 print(f"{Fore.CYAN}{'='*50}\n")
 
 # ==========================================
-# 1. کنفیگریشن (Railway Environment Variables)
+# 1. Configuration (Railway Environment)
 # ==========================================
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
@@ -24,13 +24,10 @@ MONGO_URI = os.getenv("MONGO_URI")
 
 if not all([TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, MONGO_URI]):
     print(f"{Fore.RED}[!] ERROR: Environment Variables are missing!")
-    print(f"{Fore.RED}[!] Please set TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, and MONGO_URI in Railway.")
     sys.exit(1)
-else:
-    print(f"{Fore.GREEN}[+] Environment Variables Loaded Successfully.")
 
 # ==========================================
-# 2. ڈیٹا بیس کنکشن (MongoDB)
+# 2. Database Connection (MongoDB)
 # ==========================================
 print(f"{Fore.YELLOW}[*] Connecting to MongoDB...")
 try:
@@ -44,21 +41,18 @@ except Exception as e:
     sys.exit(1)
 
 # ==========================================
-# 3. ٹیلیگرام نوٹیفکیشن فنکشن (HTML FIX)
+# 3. Telegram HTML Notifier
 # ==========================================
 def send_telegram_alert(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    # 👇 [FIX] یہاں Markdown کی جگہ HTML کر دیا گیا ہے
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "HTML"}
     try:
-        response = requests.post(url, json=payload, timeout=10)
-        if response.status_code != 200:
-            print(f"{Fore.RED}[!] Telegram API Error: {response.text}")
+        requests.post(url, json=payload, timeout=10)
     except Exception as e:
         print(f"{Fore.RED}[!] Failed to send Telegram message: {e}")
 
 # ==========================================
-# 4. لائیو کمانڈ رنر (Real-time Printing)
+# 4. Live Command Runner
 # ==========================================
 def run_tool(command, tool_name):
     print(f"\n{Fore.CYAN}{'-'*50}")
@@ -68,106 +62,105 @@ def run_tool(command, tool_name):
 
     try:
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        
         for line in process.stdout:
             print(f"{Fore.LIGHTBLACK_EX}[{tool_name}] {line.strip()}")
-            
         process.wait() 
         
         if process.returncode != 0:
             print(f"{Fore.RED}[!] {tool_name} finished with exit code {process.returncode}")
             return False
-        else:
-            print(f"{Fore.GREEN}[+] {tool_name} COMPLETED SUCCESSFULLY.")
-            return True
-
+        return True
     except Exception as e:
         print(f"{Fore.RED}[!] System Error while running {tool_name}: {e}")
         return False
 
 # ==========================================
-# 5. مین ہیکنگ ورک فلو (The Engine)
+# 5. The Ultimate Hacking Workflow
 # ==========================================
 def start_scan(target_domain):
     print(f"\n{Fore.GREEN}{'='*50}")
-    print(f"{Fore.GREEN}🎯 INITIATING SCAN ON: {target_domain}")
+    print(f"{Fore.GREEN}🎯 INITIATING FULL PIPELINE ON: {target_domain}")
     print(f"{Fore.GREEN}{'='*50}")
     
-    send_telegram_alert(f"🔥 <b>Scan Started!</b>\n<b>Target:</b> <code>{html.escape(target_domain)}</code>\n<b>System:</b> Railway Pro Engine")
+    send_telegram_alert(f"🔥 <b>ULTIMATE SCAN STARTED!</b>\n<b>Target:</b> <code>{html.escape(target_domain)}</code>\n<b>System:</b> 1000 CPUs Railway Pro")
 
     subdomains_file = f"subdomains_{target_domain}.txt"
     live_hosts_file = f"live_{target_domain}.txt"
+    urls_file = f"urls_{target_domain}.txt"
     nuclei_output = f"nuclei_{target_domain}.json"
+    dalfox_output = f"dalfox_{target_domain}.txt"
 
-    # --- Step 1: Subfinder ---
+    # --- Step 1: Subfinder (Recon) ---
     run_tool(f"subfinder -d {target_domain} -all -o {subdomains_file}", "Subfinder")
-
-    print(f"{Fore.YELLOW}[*] Injecting main target '{target_domain}' into the list...")
+    
     with open(subdomains_file, "a") as f:
         f.write(f"{target_domain}\n")
 
-    # --- Step 2: Httpx ---
+    # --- Step 2: Httpx (Live Check) ---
     if os.path.exists(subdomains_file) and os.path.getsize(subdomains_file) > 0:
         run_tool(f"httpx -l {subdomains_file} -threads 200 -o {live_hosts_file}", "Httpx")
     else:
-        print(f"{Fore.RED}[!] No subdomains found. Skipping Httpx.")
         return
 
-    # --- Step 3: Nuclei ---
+    # --- Step 3: Nuclei (Server & Config Bugs) ---
     if os.path.exists(live_hosts_file) and os.path.getsize(live_hosts_file) > 0:
         run_tool(f"nuclei -l {live_hosts_file} -t /root/nuclei-templates -j -o {nuclei_output}", "Nuclei")
-    else:
-        print(f"{Fore.RED}[!] No live hosts found. Skipping Nuclei.")
 
-    # --- Step 4: Results Processing (HTML Escape FIX) ---
-    print(f"\n{Fore.YELLOW}[*] Processing Results and Saving to MongoDB...")
+    # --- Step 4: Katana (Deep Crawling for Parameters) ---
+    print(f"{Fore.YELLOW}[*] Deep Crawling for endpoints using Katana...")
+    if os.path.exists(live_hosts_file):
+        run_tool(f"katana -list {live_hosts_file} -jc -d 3 -o {urls_file}", "Katana")
+
+    # --- Step 5: DalFox (XSS Hunting on Crawled URLs) ---
+    if os.path.exists(urls_file) and os.path.getsize(urls_file) > 0:
+        print(f"{Fore.YELLOW}[*] Hunting for XSS using DalFox...")
+        run_tool(f"dalfox file {urls_file} --skip-bav -o {dalfox_output}", "DalFox")
+
+    # --- Step 6: Processing Nuclei Results ---
     bugs_found = 0
     if os.path.exists(nuclei_output):
         with open(nuclei_output, 'r') as file:
             for line in file:
                 try:
                     finding = json.loads(line.strip())
-                    
-                    # 1. Save to MongoDB
                     finding["scan_date"] = datetime.now()
                     finding["target_domain"] = target_domain
                     vuln_collection.insert_one(finding)
                     bugs_found += 1
 
-                    # 2. Extract Data for Telegram
                     vuln_name = finding.get("info", {}).get("name", "Unknown Bug")
                     severity = finding.get("info", {}).get("severity", "info").upper()
                     matched_url = finding.get("matched-at", "Unknown URL")
                     
                     emoji = "🔴" if severity in ["CRITICAL", "HIGH"] else ("🟠" if severity == "MEDIUM" else ("🟡" if severity == "LOW" else "🔵"))
                     
-                    # 👇 [FIX] HTML Escape - اب کوئی URL کریش نہیں ہوگا
-                    safe_name = html.escape(vuln_name)
-                    safe_url = html.escape(matched_url)
-                    
-                    msg = f"{emoji} <b>New Vulnerability Found!</b>\n\n📌 <b>Bug:</b> {safe_name}\n⚠️ <b>Severity:</b> {severity}\n🔗 <b>URL:</b> <code>{safe_url}</code>"
+                    msg = f"{emoji} <b>Nuclei Vuln Found!</b>\n\n📌 <b>Bug:</b> {html.escape(vuln_name)}\n⚠️ <b>Severity:</b> {severity}\n🔗 <b>URL:</b> <code>{html.escape(matched_url)}</code>"
                     send_telegram_alert(msg)
-
-                except json.JSONDecodeError:
+                except:
                     continue
 
-    print(f"{Fore.GREEN}[+] Scan Complete for {target_domain}. Total Bugs: {bugs_found}")
+    # --- Step 7: Processing DalFox Results ---
+    if os.path.exists(dalfox_output):
+        with open(dalfox_output, 'r') as file:
+            for line in file:
+                if "POC" in line or "[V]" in line:
+                    bugs_found += 1
+                    msg = f"💥 <b>DalFox XSS Found!</b>\n\n🔗 <b>Payload/URL:</b>\n<code>{html.escape(line.strip())}</code>"
+                    send_telegram_alert(msg)
+
+    print(f"{Fore.GREEN}[+] Pipeline Complete for {target_domain}. Total Bugs: {bugs_found}")
     send_telegram_alert(f"✅ <b>Scan Completed for:</b> <code>{html.escape(target_domain)}</code>\n<b>Total Bugs Logged:</b> {bugs_found}")
 
-    # --- Step 5: Clean up ---
-    print(f"{Fore.YELLOW}[*] Cleaning up temporary files...")
-    for f in [subdomains_file, live_hosts_file, nuclei_output]:
+    # --- Step 8: Clean up ---
+    for f in [subdomains_file, live_hosts_file, urls_file, nuclei_output, dalfox_output]:
         if os.path.exists(f):
             os.remove(f)
-            print(f"{Fore.LIGHTBLACK_EX} Deleted: {f}")
-    
-    print(f"{Fore.GREEN}[+] Cleanup Done. Engine is ready for next target.")
 
 # ==========================================
-# 6. Execution Entry Point
+# 6. Target List & Execution
 # ==========================================
 if __name__ == "__main__":
-    # دنیا کے ٹاپ اور قانونی بگ باؤنٹی پروگرامز (Wildcard Scope)
+    # دنیا کی ٹاپ اور قانونی 10 ویب سائٹس (Wide Scope)
     targets = [
         # باؤنٹی دینے والی بڑی کمپنیاں ($$$)
         "yahoo.com",
@@ -191,11 +184,11 @@ if __name__ == "__main__":
         "sony.com"
     ]
     
-    print(f"{Fore.MAGENTA}[*] Total Targets loaded for Night Hunt: {len(targets)}\n")
+    print(f"{Fore.MAGENTA}[*] Total Targets loaded for Ultimate Hunt: {len(targets)}\n")
     
     for target in targets:
         start_scan(target)
         
     print(f"\n{Fore.GREEN}{'='*50}")
-    print(f"{Fore.GREEN}🎉 NIGHT HUNT COMPLETED. ENGINE GOING TO SLEEP.")
-    send_telegram_alert("🏁 <b>Night Hunt completed successfully! Cyber Beast going to sleep.</b>")
+    print(f"{Fore.GREEN}🎉 ULTIMATE HUNT COMPLETED. ENGINE GOING TO SLEEP.")
+    send_telegram_alert("🏁 <b>Ultimate Hunt completed successfully! Cyber Beast going to sleep.</b>")

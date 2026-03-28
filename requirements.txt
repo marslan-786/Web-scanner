@@ -1,0 +1,6 @@
+requests
+python-telegram-bot
+aiohttp
+beautifulsoup4
+colorama
+pymongo

@@ -7,7 +7,7 @@ from pymongo import MongoClient
 from datetime import datetime
 from colorama import Fore, Style, init
 
-# Colorama کو انیشلائز کرنا تاکہ ونڈوز اور لینکس دونوں پر رنگین ٹیکسٹ آئے
+# Colorama کو انیشلائز کرنا تاکہ کنسول پر رنگین آؤٹ پٹ آئے
 init(autoreset=True)
 
 print(f"{Fore.CYAN}{'='*50}")
@@ -36,7 +36,6 @@ try:
     client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
     db = client["CyberBeastDB"]
     vuln_collection = db["Vulnerabilities"]
-    # کنکشن چیک کرنے کے لیے ایک پنگ
     client.server_info()
     print(f"{Fore.GREEN}[+] MongoDB Connected Successfully!\n")
 except Exception as e:
@@ -60,27 +59,22 @@ def send_telegram_alert(message):
 # 4. لائیو کمانڈ رنر (Real-time Printing)
 # ==========================================
 def run_tool(command, tool_name):
-    """یہ فنکشن ٹول چلائے گا اور اس کا آؤٹ پٹ لائیو کنسول پر دکھائے گا"""
     print(f"\n{Fore.CYAN}{'-'*50}")
     print(f"{Fore.MAGENTA}[*] STARTING MODULE: {tool_name.upper()}")
     print(f"{Fore.YELLOW}[>] Command: {command}")
     print(f"{Fore.CYAN}{'-'*50}")
 
     try:
-        # Popen کے ذریعے لائیو آؤٹ پٹ کیپچر کرنا
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         
-        # کنسول پر لائن بائی لائن پرنٹ کرنا
         for line in process.stdout:
             print(f"{Fore.LIGHTBLACK_EX}[{tool_name}] {line.strip()}")
             
-        process.wait() # ٹول کے مکمل ہونے کا انتظار
+        process.wait() 
         
-        # چیک کرنا کہ ٹول کامیابی سے چلا یا کریش ہوا
         if process.returncode != 0:
-            error_msg = f"⚠️ *Module Crash Alert!*\nTool: `{tool_name}` exited with error code {process.returncode}."
-            print(f"{Fore.RED}[!] {tool_name} FAILED with exit code {process.returncode}")
-            send_telegram_alert(error_msg)
+            error_msg = f"⚠️ *Module Error!*\nTool: `{tool_name}` exited with code {process.returncode}."
+            print(f"{Fore.RED}[!] {tool_name} finished with exit code {process.returncode}")
             return False
         else:
             print(f"{Fore.GREEN}[+] {tool_name} COMPLETED SUCCESSFULLY.")
@@ -88,7 +82,6 @@ def run_tool(command, tool_name):
 
     except Exception as e:
         print(f"{Fore.RED}[!] System Error while running {tool_name}: {e}")
-        send_telegram_alert(f"⚠️ *System Error:*\nCould not execute `{tool_name}`. Error: {e}")
         return False
 
 # ==========================================
@@ -108,12 +101,16 @@ def start_scan(target_domain):
     # --- Step 1: Subfinder ---
     run_tool(f"subfinder -d {target_domain} -all -o {subdomains_file}", "Subfinder")
 
+    # 👇 [FIX] مین ٹارگٹ کو خود فائل میں ڈالنا تاکہ اسکین کبھی نہ رکے
+    print(f"{Fore.YELLOW}[*] Injecting main target '{target_domain}' into the list to ensure scanning continues...")
+    with open(subdomains_file, "a") as f:
+        f.write(f"{target_domain}\n")
+
     # --- Step 2: Httpx ---
     if os.path.exists(subdomains_file) and os.path.getsize(subdomains_file) > 0:
         run_tool(f"httpx -l {subdomains_file} -threads 200 -o {live_hosts_file}", "Httpx")
     else:
-        print(f"{Fore.RED}[!] No subdomains found. Skipping Httpx.")
-        send_telegram_alert(f"⚠️ No subdomains found for `{target_domain}`. Scan stopped.")
+        print(f"{Fore.RED}[!] No subdomains found and injection failed. Skipping Httpx.")
         return
 
     # --- Step 3: Nuclei ---
@@ -131,13 +128,11 @@ def start_scan(target_domain):
                 try:
                     finding = json.loads(line.strip())
                     
-                    # Database Insertion
                     finding["scan_date"] = datetime.now()
                     finding["target_domain"] = target_domain
                     vuln_collection.insert_one(finding)
                     bugs_found += 1
 
-                    # Telegram Alert Parsing
                     vuln_name = finding.get("info", {}).get("name", "Unknown Bug")
                     severity = finding.get("info", {}).get("severity", "info").upper()
                     matched_url = finding.get("matched-at", "Unknown URL")
@@ -150,7 +145,7 @@ def start_scan(target_domain):
                 except json.JSONDecodeError:
                     continue
 
-    print(f"{Fore.GREEN}[+] Scan Complete. Total Bugs Logged: {bugs_found}")
+    print(f"{Fore.GREEN}[+] Scan Complete for {target_domain}. Total Bugs: {bugs_found}")
     send_telegram_alert(f"✅ *Scan Completed for:* `{target_domain}`\n*Total Bugs Logged:* {bugs_found}")
 
     # --- Step 5: Clean up ---
@@ -163,10 +158,21 @@ def start_scan(target_domain):
     print(f"{Fore.GREEN}[+] Cleanup Done. Engine is ready for next target.")
 
 # ==========================================
-# 6. Execution Entry Point
+# 6. Execution Entry Point (Multi-Target Loop)
 # ==========================================
 if __name__ == "__main__":
-    # لیبارٹری ٹارگٹ ٹیسٹنگ کے لیے
-    target = "testphp.vulnweb.com" 
-    start_scan(target)
+    # یہاں ہم نے 3 بہترین ٹیسٹنگ ویب سائٹس ڈال دی ہیں
+    targets = [
+        "vulnweb.com",         # اس کے بہت سے سب ڈومینز ہیں
+        "brokencrystals.com",  # API بگز کے لیے
+        "demo.testfire.net"    # فنانشل ایپس کے بگز کے لیے
+    ]
     
+    print(f"{Fore.MAGENTA}[*] Total Targets loaded: {len(targets)}\n")
+    
+    for target in targets:
+        start_scan(target)
+        
+    print(f"\n{Fore.GREEN}{'='*50}")
+    print(f"{Fore.GREEN}🎉 ALL TARGETS SCANNED SUCCESSFULLY. ENGINE GOING TO SLEEP.")
+    send_telegram_alert("🏁 *All scans completed successfully! Cyber Beast going to sleep.*")

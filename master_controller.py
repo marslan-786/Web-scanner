@@ -167,17 +167,35 @@ def start_scan(target_domain):
 # 6. Execution Entry Point
 # ==========================================
 if __name__ == "__main__":
+    # دنیا کے ٹاپ اور قانونی بگ باؤنٹی پروگرامز (Wildcard Scope)
     targets = [
-        "vulnweb.com",
-        "brokencrystals.com",
-        "demo.testfire.net"
+        # باؤنٹی دینے والی بڑی کمپنیاں ($$$)
+        "yahoo.com",
+        "uber.com",
+        "paypal.com",
+        "spotify.com",
+        "github.com",
+        "glassdoor.com",
+        "snapchat.com",
+        
+        # کارپوریٹ اور ٹیک جائنٹس (Bounty + Hall of Fame)
+        "ibm.com",
+        "att.com",
+        "ford.com",
+        "intel.com",
+        
+        # VDP پروگرامز (یہاں بگز جلدی ملتے ہیں - Good for practice)
+        "redbull.com",
+        "starbucks.com",
+        "dell.com",
+        "sony.com"
     ]
     
-    print(f"{Fore.MAGENTA}[*] Total Targets loaded: {len(targets)}\n")
+    print(f"{Fore.MAGENTA}[*] Total Targets loaded for Night Hunt: {len(targets)}\n")
     
     for target in targets:
         start_scan(target)
         
     print(f"\n{Fore.GREEN}{'='*50}")
-    print(f"{Fore.GREEN}🎉 ALL TARGETS SCANNED SUCCESSFULLY. ENGINE GOING TO SLEEP.")
-    send_telegram_alert("🏁 <b>All scans completed successfully! Cyber Beast going to sleep.</b>")
+    print(f"{Fore.GREEN}🎉 NIGHT HUNT COMPLETED. ENGINE GOING TO SLEEP.")
+    send_telegram_alert("🏁 <b>Night Hunt completed successfully! Cyber Beast going to sleep.</b>")

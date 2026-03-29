@@ -12,7 +12,7 @@ from colorama import Fore, Style, init
 init(autoreset=True)
 
 print(f"{Fore.CYAN}{'='*50}")
-print(f"{Fore.CYAN}🚀 CYBER BEAST ULTIMATE ENGINE INITIALIZING...")
+print(f"{Fore.CYAN}🚀 CYBER BEAST ULTIMATE ENGINE (V2 - SAFE MODE)...")
 print(f"{Fore.CYAN}{'='*50}\n")
 
 # ==========================================
@@ -82,7 +82,7 @@ def start_scan(target_domain):
     print(f"{Fore.GREEN}🎯 INITIATING FULL PIPELINE ON: {target_domain}")
     print(f"{Fore.GREEN}{'='*50}")
     
-    send_telegram_alert(f"🔥 <b>ULTIMATE SCAN STARTED!</b>\n<b>Target:</b> <code>{html.escape(target_domain)}</code>\n<b>System:</b> 1000 CPUs Railway Pro")
+    send_telegram_alert(f"🔥 <b>ULTIMATE SCAN STARTED!</b>\n<b>Target:</b> <code>{html.escape(target_domain)}</code>\n<b>System:</b> 1000 CPUs Railway Pro (Safe Mode)")
 
     subdomains_file = f"subdomains_{target_domain}.txt"
     live_hosts_file = f"live_{target_domain}.txt"
@@ -96,25 +96,25 @@ def start_scan(target_domain):
     with open(subdomains_file, "a") as f:
         f.write(f"{target_domain}\n")
 
-    # --- Step 2: Httpx (Live Check) ---
+    # --- Step 2: Httpx (Live Check - WITH TIMEOUTS & LIMITS) ---
     if os.path.exists(subdomains_file) and os.path.getsize(subdomains_file) > 0:
-        run_tool(f"httpx -l {subdomains_file} -threads 200 -o {live_hosts_file}", "Httpx")
+        run_tool(f"httpx -l {subdomains_file} -threads 50 -rl 300 -timeout 10 -o {live_hosts_file}", "Httpx")
     else:
         return
 
-    # --- Step 3: Nuclei (Server & Config Bugs) ---
+    # --- Step 3: Nuclei (Server Bugs - WITH SAFETY VALVES) ---
     if os.path.exists(live_hosts_file) and os.path.getsize(live_hosts_file) > 0:
-        run_tool(f"nuclei -l {live_hosts_file} -t /root/nuclei-templates -j -o {nuclei_output}", "Nuclei")
+        run_tool(f"nuclei -l {live_hosts_file} -t /root/nuclei-templates -c 50 -rl 300 -timeout 10 -mhe 3 -j -o {nuclei_output}", "Nuclei")
 
-    # --- Step 4: Katana (Deep Crawling for Parameters) ---
+    # --- Step 4: Katana (Deep Crawling - WITH RATE LIMITS) ---
     print(f"{Fore.YELLOW}[*] Deep Crawling for endpoints using Katana...")
-    if os.path.exists(live_hosts_file):
-        run_tool(f"katana -list {live_hosts_file} -jc -d 3 -o {urls_file}", "Katana")
+    if os.path.exists(live_hosts_file) and os.path.getsize(live_hosts_file) > 0:
+        run_tool(f"katana -list {live_hosts_file} -jc -d 3 -c 50 -rl 300 -timeout 10 -o {urls_file}", "Katana")
 
-    # --- Step 5: DalFox (XSS Hunting on Crawled URLs) ---
+    # --- Step 5: DalFox (XSS Hunting - WITH WORKER LIMITS) ---
     if os.path.exists(urls_file) and os.path.getsize(urls_file) > 0:
         print(f"{Fore.YELLOW}[*] Hunting for XSS using DalFox...")
-        run_tool(f"dalfox file {urls_file} --skip-bav -o {dalfox_output}", "DalFox")
+        run_tool(f"dalfox file {urls_file} --skip-bav --worker 50 -o {dalfox_output}", "DalFox")
 
     # --- Step 6: Processing Nuclei Results ---
     bugs_found = 0
@@ -160,9 +160,12 @@ def start_scan(target_domain):
 # 6. Target List & Execution
 # ==========================================
 if __name__ == "__main__":
-    # دنیا کی ٹاپ اور قانونی 10 ویب سائٹس (Wide Scope)
     targets = [
         # باؤنٹی دینے والی بڑی کمپنیاں ($$$)
+        "redbull.com",
+        "starbucks.com",
+        "dell.com",
+        "sony.com"
         "yahoo.com",
         "uber.com",
         "paypal.com",
@@ -178,10 +181,6 @@ if __name__ == "__main__":
         "intel.com",
         
         # VDP پروگرامز (یہاں بگز جلدی ملتے ہیں - Good for practice)
-        "redbull.com",
-        "starbucks.com",
-        "dell.com",
-        "sony.com"
     ]
     
     print(f"{Fore.MAGENTA}[*] Total Targets loaded for Ultimate Hunt: {len(targets)}\n")
